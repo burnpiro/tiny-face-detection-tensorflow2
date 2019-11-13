@@ -1,23 +1,30 @@
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
-import numpy as np
+from config import cfg
 
-base = tf.keras.applications.mobilenet_v2.MobileNetV2(weights='imagenet', include_top=False)
-base.trainable = False
 
-x = base.output
-x = tf.keras.layers.GlobalAveragePooling2D()(x)
-x = tf.keras.layers.Dense(1024, activation='relu')(x)
-preds = tf.keras.layers.Dense(1, activation='softmax')(x)
+def create_model(trainable=False):
+    base = tf.keras.applications.mobilenet_v2.MobileNetV2(input_shape=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE, 3),
+                                                          alpha=cfg.TRAIN.ALPHA, weights='imagenet', include_top=False)
 
-model = tf.keras.models.Model(inputs=base.input, outputs=preds)
+    for layer in base.layers:
+        layer.trainable = trainable
 
-base_learning_rate = 0.0001
-model.compile(optimizer=tf.keras.optimizers.RMSprop(lr=base_learning_rate), loss='categorical_crossentropy')
+    block = base.get_layer('block_16_project_BN').output
+    x = tf.keras.layers.Conv2D(112, padding="same", kernel_size=3, strides=1, activation="relu")(block)
+    x = tf.keras.layers.Conv2D(112, padding="same", kernel_size=3, strides=1, use_bias=False)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation('relu')(x)
 
-for layer in model.layers:
-    print(layer.name, layer.trainable)
+    x = tf.keras.layers.Conv2D(5, padding='same', kernel_size=1, activation='sigmoid')(x)
 
-model.summary()
+    model = tf.keras.Model(inputs=base.input, outputs=x)
+
+    # divide by 2 since d/dweight learning_rate * weight^2 = 2 * learning_rate * weight
+    # see https://arxiv.org/pdf/1711.05101.pdf
+    regularizer = tf.keras.regularizers.l2(cfg.TRAIN.WEIGHT_DECAY / 2)
+
+    for weight in model.trainable_weights:
+        with tf.keras.backend.name_scope('weight_regularizer'):
+            model.add_loss(lambda: regularizer(weight))
+
+    return model
