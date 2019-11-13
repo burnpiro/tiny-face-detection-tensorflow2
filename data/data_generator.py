@@ -18,16 +18,21 @@ def get_box(data):
 
 class DataGenerator(tf.keras.utils.Sequence):
 
-    def __init__(self, file_path, rnd_multiply=True, rnd_color=True, rnd_crop=True, rnd_flip=False,
+    def __init__(self, file_path, config_path, rnd_multiply=True, rnd_color=True, rnd_crop=True, rnd_flip=False,
                  debug=False):
         self.boxes = []
         self.debug = debug
+        self.data_path = file_path
 
-        if not os.path.isfile(file_path):
-            print("File path {} does not exist. Exiting...".format(file_path))
+        if not os.path.isfile(config_path):
+            print("File path {} does not exist. Exiting...".format(config_path))
             sys.exit()
 
-        with open(file_path) as fp:
+        if not os.path.isdir(file_path):
+            print("Folder path {} does not exist. Exiting...".format(file_path))
+            sys.exit()
+
+        with open(config_path) as fp:
             line = fp.readline()
             cnt = 1
             while line:
@@ -55,7 +60,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         for i, row in enumerate(boxes):
             path, x0, y0, x1, y1 = row
 
-            proc_image = tf.keras.preprocessing.image.load_img(path, target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
+            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path, target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
 
             image_width = proc_image.width
             image_height = proc_image.height
@@ -67,6 +72,17 @@ class DataGenerator(tf.keras.utils.Sequence):
             batch_images[i] = proc_image
 
             # make sure none of the points is out of image border
+            tmp = x0
+            x0 = min(x0, x1)
+            x1 = max(tmp, x1)
+
+            tmp = y0
+            y0 = min(y0, y1)
+            y1 = max(tmp, y1)
+
+            x0 = max(x0, 0)
+            y0 = max(y0, 0)
+
             y0 = min(y0, image_height)
             x0 = min(x0, image_width)
             y1 = min(y1, image_height)
@@ -75,8 +91,8 @@ class DataGenerator(tf.keras.utils.Sequence):
             x_c = (cfg.NN.GRID_SIZE / image_width) * (x0 + (x1 - x0) / 2)
             y_c = (cfg.NN.GRID_SIZE / image_height) * (y0 + (y1 - y0) / 2)
 
-            floor_y = math.floor(y_c)
-            floor_x = math.floor(x_c)
+            floor_y = min(math.floor(y_c), 6)  # handle case when x i on the corner
+            floor_x = min(math.floor(x_c), 6)  # handle case when y i on the corner
 
             batch_boxes[i, floor_y, floor_x, 0] = (y1 - y0) / image_height
             batch_boxes[i, floor_y, floor_x, 1] = (x1 - x0) / image_width
