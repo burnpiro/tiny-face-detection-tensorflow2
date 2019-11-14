@@ -11,7 +11,7 @@ IOU_THRESHOLD = 0.5
 SCORE_THRESHOLD = 0.2
 MAX_OUTPUT_SIZE = 49
 
-flags.DEFINE_string('weights', './model-0.01.h5',
+flags.DEFINE_string('weights', './model-0.65.h5',
                     'path to weights file')
 flags.DEFINE_string('image', './meme.jpg', 'path to input image')
 flags.DEFINE_string('output', './output.jpg', 'path to output image')
@@ -40,8 +40,7 @@ def main(_argv):
     boxes = np.stack([y, x, height, width, score], axis=-1)
     boxes = boxes[np.where(boxes[..., -1] >= SCORE_THRESHOLD)]
 
-    print(boxes)
-
+    # does not work with TF GPU, uncomment only when using CPU
     # selected_indices = tf.image.non_max_suppression(boxes[..., :-1], boxes[..., -1], MAX_OUTPUT_SIZE, IOU_THRESHOLD)
     # selected_indices = tf.Session().run(selected_indices)
 

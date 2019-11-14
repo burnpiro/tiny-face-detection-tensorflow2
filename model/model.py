@@ -4,14 +4,17 @@ from config import cfg
 
 def create_model(trainable=False):
     base = tf.keras.applications.mobilenet_v2.MobileNetV2(input_shape=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE, 3),
-                                                          alpha=cfg.TRAIN.ALPHA, weights='imagenet', include_top=False)
+                                                          alpha=cfg.NN.ALPHA, weights='imagenet', include_top=False)
 
     for layer in base.layers:
         layer.trainable = trainable
 
     block = base.get_layer('block_16_project_BN').output
-    x = tf.keras.layers.Conv2D(112, padding="same", kernel_size=3, strides=1, activation="relu")(block)
-    x = tf.keras.layers.Conv2D(112, padding="same", kernel_size=3, strides=1, use_bias=False)(x)
+    # UpSample base on the number of cells in the grid
+    x = tf.keras.layers.UpSampling2D()(block)
+    # Change 112 to whatever is the size of block_16_project_BN, "112" value is correct for 0.35 ALPHA, 448 is for 1.4
+    x = tf.keras.layers.Conv2D(448, padding="same", kernel_size=3, strides=1, activation="relu")(x)
+    x = tf.keras.layers.Conv2D(448, padding="same", kernel_size=3, strides=1, use_bias=False)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation('relu')(x)
 

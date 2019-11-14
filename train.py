@@ -10,7 +10,6 @@ TRAINABLE = False
 
 def main():
     model = create_model(trainable=TRAINABLE)
-    model.summary()
 
     # if TRAINABLE:
     #     model.load_weights(WEIGHTS)

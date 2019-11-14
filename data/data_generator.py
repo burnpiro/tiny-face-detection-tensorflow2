@@ -107,9 +107,9 @@ class DataGenerator(tf.keras.utils.Sequence):
             floor_y = math.floor(y_c)  # handle case when x i on the corner
             floor_x = math.floor(x_c)  # handle case when y i on the corner
 
-            if floor_x == 7:
+            if floor_x == cfg.NN.GRID_SIZE:
                 print(path, x0, y0, x1, y1, x_c)
-            if floor_y == 7:
+            if floor_y == cfg.NN.GRID_SIZE:
                 print(path, x0, y0, x1, y1, y_c)
 
             batch_boxes[i, floor_y, floor_x, 0] = (y1 - y0) / image_height
