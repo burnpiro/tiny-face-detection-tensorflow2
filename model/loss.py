@@ -27,7 +27,7 @@ def detect_loss():
 
         y, x = tf.cast(y, tf.float32), tf.cast(x, tf.float32)
 
-        # transform box to (y + offset_y, x + offset_x, 7 * height, 7 * width, obj)
+        # transform box to (y + offset_y, x + offset_x, GRID_SIZE * height, GRID_SIZE * width, obj)
         # output is (batch, 5)
         out = tf.stack([y + box[..., 2], x + box[..., 3],
                         cfg.NN.GRID_SIZE * box[..., 0], cfg.NN.GRID_SIZE * box[..., 1],

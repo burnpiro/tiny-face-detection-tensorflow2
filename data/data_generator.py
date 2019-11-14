@@ -40,6 +40,10 @@ class DataGenerator(tf.keras.utils.Sequence):
                 for i in range(num_of_obj):
                     obj_box = fp.readline().split(' ')
                     x0, y0, x1, y1 = get_box(obj_box)
+                    if x0 >= x1:
+                        continue
+                    if y0 >= y1:
+                        continue
                     self.boxes.append((line.strip(), x0, y0, x1, y1))
                 if num_of_obj == 0:
                     obj_box = fp.readline().split(' ')
@@ -60,10 +64,12 @@ class DataGenerator(tf.keras.utils.Sequence):
         for i, row in enumerate(boxes):
             path, x0, y0, x1, y1 = row
 
-            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path, target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
+            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path)
 
             image_width = proc_image.width
             image_height = proc_image.height
+
+            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path, target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
 
             proc_image = tf.keras.preprocessing.image.img_to_array(proc_image)
             proc_image = np.expand_dims(proc_image, axis=0)
@@ -88,11 +94,23 @@ class DataGenerator(tf.keras.utils.Sequence):
             y1 = min(y1, image_height)
             x1 = min(x1, image_width)
 
+            # some of the data is invalid and goes over image boundaries
+            # because of that both x0 and x1 are set to be max height
+            if x1 == x0:
+                x0 = x0 - 1
+            if y1 == y0:
+                y0 = y0 - 1
+
             x_c = (cfg.NN.GRID_SIZE / image_width) * (x0 + (x1 - x0) / 2)
             y_c = (cfg.NN.GRID_SIZE / image_height) * (y0 + (y1 - y0) / 2)
 
-            floor_y = min(math.floor(y_c), 6)  # handle case when x i on the corner
-            floor_x = min(math.floor(x_c), 6)  # handle case when y i on the corner
+            floor_y = math.floor(y_c)  # handle case when x i on the corner
+            floor_x = math.floor(x_c)  # handle case when y i on the corner
+
+            if floor_x == 7:
+                print(path, x0, y0, x1, y1, x_c)
+            if floor_y == 7:
+                print(path, x0, y0, x1, y1, y_c)
 
             batch_boxes[i, floor_y, floor_x, 0] = (y1 - y0) / image_height
             batch_boxes[i, floor_y, floor_x, 1] = (x1 - x0) / image_width

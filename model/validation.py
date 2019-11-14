@@ -56,4 +56,4 @@ class Validation(tf.keras.callbacks.Callback):
         mse = np.round(mse, 4)
         logs["val_mse"] = mse
 
-        print(" - val_iou: {} - val_mse: {}".format(iou, mse))
+        print(" - val_iou: {} - val_mse: {}\n".format(iou, mse))
