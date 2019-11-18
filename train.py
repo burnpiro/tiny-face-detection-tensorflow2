@@ -1,4 +1,5 @@
 import tensorflow as tf
+from datetime import datetime
 from model.model import create_model
 from model.validation import Validation
 from data.data_generator import DataGenerator
@@ -33,9 +34,13 @@ def main():
     reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor="val_iou", factor=0.6, patience=5, min_lr=1e-6, verbose=1,
                                                      mode="max")
 
+    # Define the Keras TensorBoard callback.
+    logdir="logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+
     model.fit_generator(generator=train_datagen,
                         epochs=cfg.TRAIN.EPOCHS,
-                        callbacks=[validation_datagen, checkpoint, reduce_lr, stop],
+                        callbacks=[tensorboard_callback, validation_datagen, checkpoint, reduce_lr, stop],
                         shuffle=True,
                         verbose=1)
 
