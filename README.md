@@ -2,17 +2,21 @@
 
 ![alt text][image]
 
+### Quick start
+
+Install tensorflow
+
 ### Important files
 
-- `./data/data_generator.py` - generates train/val data from WIDER FACE
-- `./model/model.py` - generates TF model
-- `./model/loss.py` - definition of the **loss function** for training
-- `./model/validation.py` - definition of the validation for training
-- `./config.py` - stores network/training/validation config for network
-- `./detect.py` - runs model against given image and generates output image
+- [`./data/data_generator.py`](#data_generatorpy) - generates train/val data from WIDER FACE
+- [`./model/model.py`](#modelpy) - generates TF model
+- [`./model/loss.py`](#losspy) - definition of the **loss function** for training
+- [`./model/validation.py`](#validationpy) - definition of the validation for training
+- [`./config.py`](#configpy) - stores network/training/validation config for network
+- [`./detect.py`](#detectpy) - runs model against given image and generates output image
 - `./draw_boxes` - helper function for `./detect.py`, draws boxes on cv2 img
 - `./print_model.py` - prints current model structure
-- `./train.py` - starts training our model and create weights base on training results and validation function
+- [`./train.py`](#trainpy) - starts training our model and create weights base on training results and validation function
 
 ### Dataset
 
@@ -78,6 +82,12 @@ python detect.py --image path_to_my_image.jpg --weights model-0.64.h5 --output o
 #### train.py
 
 There is no parameters for it but you might want to read that file. It's running base on `config.py` and other files already described. If you want to train your model from specific point then uncomment `IF TRAINABLE` and add weights file.
+
+After running training script will generate `./logs/fit/**` files. You can use **Tensorboard** for visualise training
+
+```bash
+tensorboard --logdir logs/fit
+```
 
 
 [image]: ./example_output.jpg "Sample Output"
