@@ -18,8 +18,7 @@ def get_box(data):
 
 class DataGenerator(tf.keras.utils.Sequence):
 
-    def __init__(self, file_path, config_path, rnd_multiply=True, rnd_color=True, rnd_crop=True, rnd_flip=False,
-                 debug=False):
+    def __init__(self, file_path, config_path, debug=False):
         self.boxes = []
         self.debug = debug
         self.data_path = file_path
@@ -41,6 +40,12 @@ class DataGenerator(tf.keras.utils.Sequence):
                     obj_box = fp.readline().split(' ')
                     x0, y0, x1, y1 = get_box(obj_box)
                     if x0 >= x1:
+                        continue
+                    # Because our network is outputting 7x7 grid then it's not worth processing images with more than
+                    # 5 faces because it's highly probable they are close to each other.
+                    # You could remove this filter if you decide to switch to larger grid (like 14x14)
+                    # Don't worry about number of train data because even with this filter we have around 16k samples
+                    if num_of_obj > 5:
                         continue
                     if y0 >= y1:
                         continue
@@ -69,7 +74,8 @@ class DataGenerator(tf.keras.utils.Sequence):
             image_width = proc_image.width
             image_height = proc_image.height
 
-            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path, target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
+            proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path,
+                                                               target_size=(cfg.NN.INPUT_SIZE, cfg.NN.INPUT_SIZE))
 
             proc_image = tf.keras.preprocessing.image.img_to_array(proc_image)
             proc_image = np.expand_dims(proc_image, axis=0)
