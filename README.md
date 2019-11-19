@@ -4,7 +4,10 @@
 
 ### Quick start
 
-Install tensorflow
+- Install tensorflow and other `requirements.txt`
+- Get [DataSet](#dataset)
+- run `python train.py` (takes a while, depends on your machine)
+- run `python detect.py --image my_image.jpg`
 
 ### Important files
 
