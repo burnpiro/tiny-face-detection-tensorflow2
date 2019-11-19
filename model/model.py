@@ -9,18 +9,17 @@ def create_model(trainable=False):
     for layer in base.layers:
         layer.trainable = trainable
 
-    block = base.get_layer('block_16_project_BN').output
-    # UpSample base on the number of cells in the grid
-    x = tf.keras.layers.UpSampling2D()(block)
+    out = base.get_layer('block_16_project_BN').output
     # Change 112 to whatever is the size of block_16_project_BN, "112" value is correct for 0.35 ALPHA, 448 is for 1.4
-    x = tf.keras.layers.Conv2D(448, padding="same", kernel_size=3, strides=1, activation="relu")(x)
-    x = tf.keras.layers.Conv2D(448, padding="same", kernel_size=3, strides=1, use_bias=False)(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Activation('relu')(x)
+    # Depends on your output complexity you might want to add another Conv2D layers (like one commented out displayed below)
+    out = tf.keras.layers.Conv2D(240, padding="same", kernel_size=3, strides=1, activation="relu")(out)
+    # out = tf.keras.layers.Conv2D(240, padding="same", kernel_size=3, strides=1, use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.Activation('relu')(out)
 
-    x = tf.keras.layers.Conv2D(5, padding='same', kernel_size=1, activation='sigmoid')(x)
+    out = tf.keras.layers.Conv2D(5, padding='same', kernel_size=1, activation='sigmoid')(out)
 
-    model = tf.keras.Model(inputs=base.input, outputs=x)
+    model = tf.keras.Model(inputs=base.input, outputs=out)
 
     # divide by 2 since d/dweight learning_rate * weight^2 = 2 * learning_rate * weight
     # see https://arxiv.org/pdf/1711.05101.pdf

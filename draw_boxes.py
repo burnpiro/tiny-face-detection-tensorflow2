@@ -13,6 +13,6 @@ def draw_outputs(img, boxes, draw_labels=True):
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
         if draw_labels:
             img = cv2.putText(img, '{} {:.4f}'.format(
-                'human', score),
+                'face', score),
                               x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
     return img
