@@ -8,7 +8,6 @@ from model.model import create_model
 from config import cfg
 from draw_boxes import draw_outputs
 
-IOU_THRESHOLD = 0.5
 SCORE_THRESHOLD = 0.5
 MAX_OUTPUT_SIZE = 49
 
@@ -45,7 +44,7 @@ def main(_argv):
     boxes = boxes[np.where(boxes[..., -1] >= SCORE_THRESHOLD)]
 
     # does not work with TF GPU, uncomment only when using CPU
-    # selected_indices = tf.image.non_max_suppression(boxes[..., :-1], boxes[..., -1], MAX_OUTPUT_SIZE, IOU_THRESHOLD)
+    # selected_indices = tf.image.non_max_suppression(boxes[..., :-1], boxes[..., -1], MAX_OUTPUT_SIZE, cfg.NN.IOU_LOSS_THRESH)
     # selected_indices = tf.Session().run(selected_indices)
 
     # print(len(boxes))
