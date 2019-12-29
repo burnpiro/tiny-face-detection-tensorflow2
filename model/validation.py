@@ -29,7 +29,7 @@ class Validation(tf.keras.callbacks.Callback):
 
         for i in range(len(self.generator)):
             batch_images, gt = self.generator[i]
-            pred = self.model.predict_on_batch(batch_images).numpy()
+            pred = self.model.predict_on_batch(batch_images)
 
             pred = self.get_box_highets_percentage(pred)
             gt = self.get_box_highets_percentage(gt)
