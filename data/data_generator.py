@@ -6,14 +6,14 @@ import tensorflow as tf
 from config import cfg
 
 
-# Input: [x0, y0, w, h]
-# Output: x0, y0, x1, y1
+# Input: [x0, y0, w, h, blur, expression, illumination, invalid, occlusion, pose]
+# Output: x0, y0, w, h
 def get_box(data):
     x0 = int(data[0])
     y0 = int(data[1])
-    x1 = int(data[0]) + int(data[2])
-    y1 = int(data[1]) + int(data[3])
-    return x0, y0, x1, y1
+    w = int(data[2])
+    h = int(data[3])
+    return x0, y0, w, h
 
 
 class DataGenerator(tf.keras.utils.Sequence):
@@ -28,7 +28,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             sys.exit()
 
         if not os.path.isdir(file_path):
-            print("Folder path {} does not exist. Exiting...".format(file_path))
+            print("Images folder path {} does not exist. Exiting...".format(file_path))
             sys.exit()
 
         with open(config_path) as fp:
@@ -38,8 +38,12 @@ class DataGenerator(tf.keras.utils.Sequence):
                 num_of_obj = int(fp.readline())
                 for i in range(num_of_obj):
                     obj_box = fp.readline().split(' ')
-                    x0, y0, x1, y1 = get_box(obj_box)
-                    if x0 >= x1:
+                    x0, y0, w, h = get_box(obj_box)
+                    if w == 0:
+                        # remove boxes with no width
+                        continue
+                    if h == 0:
+                        # remove boxes with no height
                         continue
                     # Because our network is outputting 7x7 grid then it's not worth processing images with more than
                     # 5 faces because it's highly probable they are close to each other.
@@ -47,13 +51,11 @@ class DataGenerator(tf.keras.utils.Sequence):
                     # Don't worry about number of train data because even with this filter we have around 16k samples
                     if num_of_obj > 5:
                         continue
-                    if y0 >= y1:
-                        continue
-                    self.boxes.append((line.strip(), x0, y0, x1, y1))
+                    self.boxes.append((line.strip(), x0, y0, w, h))
                 if num_of_obj == 0:
                     obj_box = fp.readline().split(' ')
-                    x0, y0, x1, y1 = get_box(obj_box)
-                    self.boxes.append((line.strip(), x0, y0, x1, y1))
+                    x0, y0, w, h = get_box(obj_box)
+                    self.boxes.append((line.strip(), x0, y0, w, h))
                 line = fp.readline()
                 cnt += 1
 
@@ -67,7 +69,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         batch_boxes = np.zeros((len(boxes), cfg.NN.GRID_SIZE, cfg.NN.GRID_SIZE, 5), dtype=np.float32)
 
         for i, row in enumerate(boxes):
-            path, x0, y0, x1, y1 = row
+            path, x0, y0, w, h = row
 
             proc_image = tf.keras.preprocessing.image.load_img(self.data_path + path)
 
@@ -84,42 +86,25 @@ class DataGenerator(tf.keras.utils.Sequence):
             batch_images[i] = proc_image
 
             # make sure none of the points is out of image border
-            tmp = x0
-            x0 = min(x0, x1)
-            x1 = max(tmp, x1)
-
-            tmp = y0
-            y0 = min(y0, y1)
-            y1 = max(tmp, y1)
-
             x0 = max(x0, 0)
             y0 = max(y0, 0)
 
-            y0 = min(y0, image_height)
             x0 = min(x0, image_width)
-            y1 = min(y1, image_height)
-            x1 = min(x1, image_width)
+            y0 = min(y0, image_height)
 
-            # some of the data is invalid and goes over image boundaries
-            # because of that both x0 and x1 are set to be max height
-            if x1 == x0:
-                x0 = x0 - 1
-            if y1 == y0:
-                y0 = y0 - 1
-
-            x_c = (cfg.NN.GRID_SIZE / image_width) * (x0 + (x1 - x0) / 2)
-            y_c = (cfg.NN.GRID_SIZE / image_height) * (y0 + (y1 - y0) / 2)
+            x_c = (cfg.NN.GRID_SIZE / image_width) * x0
+            y_c = (cfg.NN.GRID_SIZE / image_height) * y0
 
             floor_y = math.floor(y_c)  # handle case when x i on the corner
             floor_x = math.floor(x_c)  # handle case when y i on the corner
 
-            if floor_x == cfg.NN.GRID_SIZE:
-                print(path, x0, y0, x1, y1, x_c)
-            if floor_y == cfg.NN.GRID_SIZE:
-                print(path, x0, y0, x1, y1, y_c)
+            if floor_x == cfg.NN.GRID_SIZE and self.debug:
+                print(path, x0, y0, w, h, x_c)
+            if floor_y == cfg.NN.GRID_SIZE and self.debug:
+                print(path, x0, y0, w, h, y_c)
 
-            batch_boxes[i, floor_y, floor_x, 0] = (y1 - y0) / image_height
-            batch_boxes[i, floor_y, floor_x, 1] = (x1 - x0) / image_width
+            batch_boxes[i, floor_y, floor_x, 0] = h / image_height
+            batch_boxes[i, floor_y, floor_x, 1] = w / image_width
             batch_boxes[i, floor_y, floor_x, 2] = y_c - floor_y
             batch_boxes[i, floor_y, floor_x, 3] = x_c - floor_x
             batch_boxes[i, floor_y, floor_x, 4] = 1
