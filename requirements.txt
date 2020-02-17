@@ -1,5 +1,5 @@
 absl-py>=0.8
-tensorflow>=2.0
+tensorflow>=2.0.1
 easydict==1.9
 numpy>=1.17
 opencv-python>=4
